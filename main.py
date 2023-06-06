@@ -295,5 +295,43 @@ async def handle_poll_answer(poll: PollAnswer):
     connect.close()
 
 
+# --------------------------------------------------------------------------------
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='program'))
+async def po_command(call: CallbackQuery):
+    await call.answer(cache_time=10)
+    await bot.send_poll(chat_id=call.message.chat.id,
+                        question='Что есть в вашей программе?',
+                        options=['Запускается ли ваше ПО?',
+                                 'Соответствует программа ТЗ?',
+                                 'В вашем программном обеспечении есть схема данных?',
+                                 'Авторизация присутствует в вашем ПО?',
+                                 'Содержит ли ПО следующие осн функции: фильтр, расч. и др?',
+                                 'Включена в ваше ПО обработка ошибок?',
+
+                                 ],
+                        is_anonymous=False,
+                        allows_multiple_answers=True)
+
+#
+# 'Присутствует русификация в вашем проекте?',
+# 'Вы указали справку в вашем ПО?',
+# 'Присутствует ли заполнение данными?',
+# 'Содержатся отчеты?',
+# 'Включено ли журналирование и другие дополнительные функции?',
+# 'Ваша программа содержит дружелюбный интерфейс?'
+@dp.callback_query_handler(kbs.cb.filter(action='пользовательский интерфейс'))
+async def polinterf_command(call: CallbackQuery):
+    await call.answer(cache_time=10)
+    await bot.send_poll(chat_id=call.message.chat.id,
+                        question='Присутствует у вас разработка архитектуры программы?',
+                        options=['У вас присутствует схема?',
+                                 'Есть ли у вас описание элементов?'
+                                 ],
+                        is_anonymous=False,
+                        allows_multiple_answers=True)
+
+
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)

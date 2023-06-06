@@ -2,8 +2,6 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from aiogram.utils.callback_data import CallbackData
 
-
-
 list_pz = [
     'Введение',
     'Аннотация',
@@ -16,11 +14,13 @@ list_pz = [
     'пользовательский интерфейс'
 
 ]
+
+
+
 #
 # 'обработка событий и ошибок ввода данных',
 # 'программный алгоритм',
 # 'интерфейса хранения данных'
-
 
 
 cb = CallbackData('mark', 'action')
@@ -38,10 +38,7 @@ def createButPz():
     return group_keyboard
 
 
-
-
 def createButGroups(lst):
-
     group_keyboard = InlineKeyboardMarkup()
     lst_button = []
     for i in (lst):
@@ -53,10 +50,8 @@ def createButGroups(lst):
     return group_keyboard
 
 
-
 # это наше меню
 menu_keyboard = InlineKeyboardMarkup()
-
 
 # callback_data='study_but'
 
@@ -65,7 +60,6 @@ photo_button = InlineKeyboardButton('Наши фото', url="https://www.youtub
 pz_button = InlineKeyboardButton('ПЗ', callback_data='mark:pz')
 program_button = InlineKeyboardButton('Программа', callback_data='mark:program')
 
-
 menu_keyboard.row(secret_button, photo_button)
 menu_keyboard.add(pz_button, program_button)
 
@@ -73,19 +67,12 @@ menu_keyboard.add(pz_button, program_button)
 button = KeyboardButton('Меню')
 menu_button = ReplyKeyboardMarkup(resize_keyboard=True).add(button)
 
-
-
-
-
-
-
 # -------------------------------------------------------------------------
 
 study_keyboard = InlineKeyboardMarkup()
 history_button = InlineKeyboardButton('История', 'history_but')
 
 study_keyboard.add(history_button)
-
 
 question1_cb = CallbackData('question1', 'answer')
 question2_cb = CallbackData('question2', 'answer')
