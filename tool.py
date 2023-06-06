@@ -42,9 +42,6 @@ async def instr_question4_handler(callback_query: CallbackQuery,
     else:
         await callback_query.answer('Неправильно.🤔')
 
-    async def structure_command(callback_query: types.CallbackQuery):
-        await bot.send_message(callback_query.from_user.id, 'Наш колледж стремится к созданию')
-
 
 async def structure_command(callback_query: types.CallbackQuery):
     await bot.send_message(callback_query.from_user.id,
