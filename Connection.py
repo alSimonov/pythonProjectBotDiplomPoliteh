@@ -1,10 +1,10 @@
 import pyodbc
 
 
-s = 'DESKTOP-IBJCCC1' #Your server name
+s = 'DESKTOP-134JFDN' #Your server name
 d = 'DiplomBotDatabase' #Your database name
-u = 'admin' #Your login
-p = 'admin' #Your login password
+u = 'UserAdmin' #Your login
+p = 'Admin228' #Your login password
 str_con = 'DRIVER={ODBC Driver 17 for SQL Server};SERVER='+s+';DATABASE='+d+';UID='+u+';PWD='+ p
 
 def connect():
