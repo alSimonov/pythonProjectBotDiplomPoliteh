@@ -1,9 +1,11 @@
+import asyncio
+
 from conf import token
 import but as kbs
 from asyncio import new_event_loop
 from aiogram import Bot, types, Dispatcher, executor
-from aiogram.types import CallbackQuery, InputFile, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
-from aiogram.types.poll import PollAnswer
+from aiogram.types import CallbackQuery, InputFile, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, PollAnswer
+# from aiogram.types.poll import PollAnswer
 
 from tool import instr_question1_handler, instr_question2_handler, instr_question3_handler, instr_question4_handler, \
     structure_command
@@ -123,8 +125,24 @@ async def start_command(message: types.Message):
     #                        parse_mode="HTML",
     #                        reply_markup=kb)
     await bot.send_message(message.from_user.id, f'Привет {message.from_user.full_name}', reply_markup=kbs.menu_button)
+    await bot.send_message(message.from_user.id, f'Для полного фунционала, следует зарегестрироваться!',
+                           reply_markup=kbs.reg_keyboard)
     # await message.answer(f"текст", reply_markup=kbs.menu_keyboard)
     await message.delete()
+
+
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='registr'))
+async def vvedenie_command(call: CallbackQuery):
+    await call.answer(cache_time=10)
+    await bot.send_poll(chat_id=call.message.chat.id,
+                        question='Выберите роль',
+                        options=['Студент',
+                                 'Дипломный руководитель',
+                                 ],
+                        is_anonymous=False,
+                        allows_multiple_answers=False)
 
 
 @dp.message_handler(commands=['description'])
@@ -159,11 +177,23 @@ async def group_command(message: types.Message):
     await message.delete()
 
 
+@dp.callback_query_handler(kbs.cb.filter(action='Введение'))
+async def vvedenie_command(call: CallbackQuery):
+    await call.answer(cache_time=10)
+    await bot.send_poll(chat_id=call.message.chat.id,
+                        question='000 Есть ли у вас введение?',
+                        options=['Да',
+                                 'Нет',
+                                 ],
+                        is_anonymous=False,
+                        allows_multiple_answers=True)
+
+
 @dp.callback_query_handler(kbs.cb.filter(action='Аннотация'))
 async def annotaion_command(call: CallbackQuery):
     await call.answer(cache_time=10)
     await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Что содержит ваша аннотация?',
+                        question='001 Что содержит ваша аннотация?',
                         options=['цель',
                                  'задачи',
                                  'требования',
@@ -176,14 +206,15 @@ async def annotaion_command(call: CallbackQuery):
 @dp.callback_query_handler(kbs.cb.filter(action='Обзор предметной области'))
 async def reviewsubarea_command(call: CallbackQuery):
     await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Присутсвует ли в вашей работе обзор предметной области?',
+    poll = await bot.send_poll(chat_id=call.message.chat.id,
+                        question='002 Присутсвует ли в вашей работе обзор предметной области?',
                         options=['обзор предметной области?', 'содержит ли он ссылки на авторов?'],
                         is_anonymous=False,
                         allows_multiple_answers=True)
+    await asyncio.sleep(20)
+    await bot.delete_message(chat_id=call.message.chat.id, message_id=poll.message_id)
 
-
-@dp.callback_query_handler(kbs.cb.filter(action='Обзор аналогов'))
+@dp.callback_query_handler(kbs.cb.filter(action='003 Обзор аналогов'))
 async def reviewanalog_command(call: CallbackQuery):
     await call.answer(cache_time=10)
     await bot.send_poll(chat_id=call.message.chat.id,
@@ -211,7 +242,7 @@ async def techzad_command(call: CallbackQuery):
     await bot.send_poll(chat_id=call.message.chat.id,
                         question='Указано ли у вас техническое задание?',
                         options=['Содержатся требования к составу выполняемых функций?',
-                                 'Имеются требования к входным и выходным данным?',
+                                 'Имеются требования к входным и выходным данным?(данные должны быть корректны,не менее 5-10 записей)',
                                  'Содержатся требования к пользовательскому интерфейсу?',
                                  'Включаеются ли требования к информационной и программной совместимости?',
                                  'Прописаны этапы разработки?'
@@ -234,6 +265,7 @@ async def arhitectprogr_command(call: CallbackQuery):
 
 @dp.callback_query_handler(kbs.cb.filter(action='структуры данных'))
 async def structuredata_command(call: CallbackQuery):
+    await call.answer(cache_time=10)
     await bot.send_poll(chat_id=call.message.chat.id,
                         question='Включена ли в работу разработка структуры данных?',
                         options=['У вас присутствует схема?',
@@ -241,7 +273,6 @@ async def structuredata_command(call: CallbackQuery):
                                  ],
                         is_anonymous=False,
                         allows_multiple_answers=True)
-    await call.answer(cache_time=10)
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='пользовательский интерфейс'))
@@ -258,7 +289,7 @@ async def polinterf_command(call: CallbackQuery):
 
 # ----------------------------------------------------
 
-@dp.callback_query_handler(kbs.cb.filter(action='обработка событий и ошибок ввода данных'))
+@dp.callback_query_handler(kbs.cb.filter(action='обработка событий и ошибок'))
 async def eventhandling_command(call: CallbackQuery):
     await call.answer(cache_time=10)
     await bot.send_poll(chat_id=call.message.chat.id,
@@ -268,6 +299,8 @@ async def eventhandling_command(call: CallbackQuery):
                                  ],
                         is_anonymous=False,
                         allows_multiple_answers=True)
+
+
 @dp.callback_query_handler(kbs.cb.filter(action='программный алгоритм'))
 async def softwarealgorithm_command(call: CallbackQuery):
     await call.answer(cache_time=10)
@@ -278,6 +311,8 @@ async def softwarealgorithm_command(call: CallbackQuery):
                                  ],
                         is_anonymous=False,
                         allows_multiple_answers=True)
+
+
 @dp.callback_query_handler(kbs.cb.filter(action='интерфейс хранения данных'))
 async def datastorageinterface_command(call: CallbackQuery):
     await call.answer(cache_time=10)
@@ -288,6 +323,7 @@ async def datastorageinterface_command(call: CallbackQuery):
                                  ],
                         is_anonymous=False,
                         allows_multiple_answers=True)
+
 
 @dp.callback_query_handler(kbs.cb.filter(action='тестирование'))
 async def testing_command(call: CallbackQuery):
@@ -300,17 +336,21 @@ async def testing_command(call: CallbackQuery):
                                  ],
                         is_anonymous=False,
                         allows_multiple_answers=True)
+
+
 @dp.callback_query_handler(kbs.cb.filter(action='руководство программиста'))
 async def programmerguide_command(call: CallbackQuery):
     await call.answer(cache_time=10)
     await bot.send_poll(chat_id=call.message.chat.id,
                         question='Указано ли у вас руководство программиста?',
                         options=['Указаны характеристики?',
-                                 'Написано, какие входные и выходные данные?'
+                                 'Написано, какие входные и выходные данные?(данные должны быть корректны,не менее 5-10 записей)',
                                  'Содержится настройка программы?'
                                  ],
                         is_anonymous=False,
                         allows_multiple_answers=True)
+
+
 @dp.callback_query_handler(kbs.cb.filter(action='руководство оператора'))
 async def operatormanual_command(call: CallbackQuery):
     await call.answer(cache_time=10)
@@ -321,16 +361,24 @@ async def operatormanual_command(call: CallbackQuery):
                                  ],
                         is_anonymous=False,
                         allows_multiple_answers=True)
+
+
 @dp.callback_query_handler(kbs.cb.filter(action='заключение'))
 async def conclusion_command(call: CallbackQuery):
     await call.answer(cache_time=10)
     await bot.send_poll(chat_id=call.message.chat.id,
                         question='Не забыли про заключение?',
-                        options=['Заключение полноценно?',
+                        options=['Соотвествует ли результат работы поставленным целям?',
+                                 'В результате работы были выполнены поставленные задачи?',
+                                 'Были ли соблюдены требования при выполнении работы?',
+                                 'Результат содержит технологии и платформу?',
+                                 'Вы указали описание разделов в результате проделанной работы?',
                                  'Вы уточнили внедрение и/или ожидаемый эффект?'
                                  ],
                         is_anonymous=False,
                         allows_multiple_answers=True)
+
+
 @dp.callback_query_handler(kbs.cb.filter(action='список литературы'))
 async def listliterature_command(call: CallbackQuery):
     await call.answer(cache_time=10)
@@ -354,22 +402,15 @@ async def process_menu_message(message: types.Message):
         await bot.send_message(message.chat.id, 'Меню:', reply_markup=kbs.menu_keyboard)
 
 
-# @dp.callback_query_handler(kbs.cb.filter(action='pz'))
-# async def pz_command(call: CallbackQuery):
-#     await call.answer(cache_time=10)
-#     await bot.send_poll(chat_id=call.message.chat.id,
-#                         question='Что содержит ваша аннотация?',
-#                         options=['цель',
-#                                  'задачи',
-#                                  'требования',
-#                                  'технологии и платформа',
-#                                  'описание разделов'],
-#                         is_anonymous=False,
-#                         allows_multiple_answers=True)
-
-
 @dp.poll_answer_handler()
 async def handle_poll_answer(poll: PollAnswer):
+
+
+    # обработка ответа пользователя
+    await bot.send_message(poll.user.id, "Спасибо за ответ!")
+    # удаление опроса
+
+
     connect = Connection.connect()
     cursor = connect.cursor()
     interests = str(poll['option_ids'])
@@ -387,37 +428,45 @@ async def handle_poll_answer(poll: PollAnswer):
 
 @dp.callback_query_handler(kbs.cb.filter(action='program'))
 async def po_command(call: CallbackQuery):
+    await bot.send_message(call.message.chat.id, 'Программа:', reply_markup=kbs.program_keyboard)
+    # await bot.send_message(call.message.chat.id, 'Программа:', reply_markup=kbs.createButAnswers())
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='programCh1'))
+async def po_command(call: CallbackQuery):
     await call.answer(cache_time=10)
     await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Что есть в вашей программе?',
+                        question='Что есть в вашей программе? Часть 1',
                         options=['Запускается ли ваше ПО?',
                                  'Соответствует программа ТЗ?',
                                  'В вашем программном обеспечении есть схема данных?',
                                  'Авторизация присутствует в вашем ПО?',
                                  'Содержит ли ПО следующие осн функции: фильтр, расч. и др?',
-                                 'Включена в ваше ПО обработка ошибок?',
-
+                                 'Включена в вашей ПО обработка ошибок?',
                                  ],
                         is_anonymous=False,
                         allows_multiple_answers=True)
 
-#
-# 'Присутствует русификация в вашем проекте?',
-# 'Вы указали справку в вашем ПО?',
-# 'Присутствует ли заполнение данными?',
-# 'Содержатся отчеты?',
-# 'Включено ли журналирование и другие дополнительные функции?',
-# 'Ваша программа содержит дружелюбный интерфейс?'
-@dp.callback_query_handler(kbs.cb.filter(action='пользовательский интерфейс'))
-async def polinterf_command(call: CallbackQuery):
+
+@dp.callback_query_handler(kbs.cb.filter(action='programCh2'))
+async def po_command(call: CallbackQuery):
     await call.answer(cache_time=10)
     await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Присутствует у вас разработка архитектуры программы?',
-                        options=['У вас присутствует схема?',
-                                 'Есть ли у вас описание элементов?'
-                                 ],
+                        question='Что есть в вашей программе? Часть 2',
+                        options=[
+                            'Присутствует русификация в вашем проекте?',
+                            'Вы указали справку в вашем ПО?',
+                            'Присутствует ли заполнение данными?',
+                            'Содержатся отчеты?',
+                            'Включено ли журналирование и другие дополнительные функции?',
+                            'Ваша программа содержит дружелюбный интерфейс?'
+                        ],
                         is_anonymous=False,
                         allows_multiple_answers=True)
+
+
+
+
 
 
 if __name__ == '__main__':

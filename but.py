@@ -12,23 +12,16 @@ list_pz = [
     'архитектура программы',
     'структуры данных',
     'пользовательский интерфейс',
-    'обработка событий и ошибок ввода данных',
-    'программноый алгоритм',
+    'обработка событий и ошибок',
+    'программный алгоритм',
     'интерфейс хранения данных',
     'тестирование',
     'руководство программиста',
     'руководство оператора',
     'заключение',
     'список литературы'
+
 ]
-
-
-
-#
-# 'обработка событий и ошибок ввода данных',
-# 'программный алгоритм',
-# 'интерфейса хранения данных'
-
 
 cb = CallbackData('mark', 'action')
 
@@ -57,22 +50,68 @@ def createButGroups(lst):
     return group_keyboard
 
 
+# Программа
+program_keyboard = InlineKeyboardMarkup().add(
+    InlineKeyboardButton('Часть 1', callback_data='mark:programCh1'),
+    InlineKeyboardButton('Часть 2', callback_data='mark:programCh2')
+)
+
 # это наше меню
-menu_keyboard = InlineKeyboardMarkup()
-
-# callback_data='study_but'
-
-secret_button = InlineKeyboardButton('Секрет', url="https://www.youtube.com/watch?v=dQw4w9WgXcQ")
-photo_button = InlineKeyboardButton('Наши фото', url="https://www.youtube.com/watch?v=pVHKp6ffURY")
-pz_button = InlineKeyboardButton('ПЗ', callback_data='mark:pz')
-program_button = InlineKeyboardButton('Программа', callback_data='mark:program')
-
-menu_keyboard.row(secret_button, photo_button)
-menu_keyboard.add(pz_button, program_button)
+menu_keyboard = InlineKeyboardMarkup().row(
+    InlineKeyboardButton('Секрет', url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+    InlineKeyboardButton('Наши фото', url="https://www.youtube.com/watch?v=pVHKp6ffURY")
+).add(
+    InlineKeyboardButton('ПЗ', callback_data='mark:pz'),
+    InlineKeyboardButton('Программа', callback_data='mark:program')
+)
 
 # кнопка
 button = KeyboardButton('Меню')
 menu_button = ReplyKeyboardMarkup(resize_keyboard=True).add(button)
+
+
+
+# Регистрация
+reg_keyboard = InlineKeyboardMarkup().add(
+    InlineKeyboardButton('Регистрация', callback_data='mark:registr')
+)
+
+
+
+
+
+# варианты ответов
+
+def createButAnswers():
+    answers_button = ReplyKeyboardMarkup(resize_keyboard=True)
+    lst_but = []
+    lst = 5
+    for i in range(1, lst+1):
+        answers_button.insert(KeyboardButton(str(i)))
+
+        # if(i % 3 == 0):
+        #     answers_button.insert(lst_but)
+        #     lst_but = []
+
+    return answers_button
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # -------------------------------------------------------------------------
 
