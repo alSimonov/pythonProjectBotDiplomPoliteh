@@ -1,6 +1,7 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from aiogram.utils.callback_data import CallbackData
+import storage
 
 list_pz = [
     'Введение',
@@ -50,6 +51,26 @@ def createButGroups(lst):
     return group_keyboard
 
 
+# выбор роли
+role_keyboard = InlineKeyboardMarkup().add(
+    InlineKeyboardButton('Студент', callback_data='mark:roleStudent'),
+    InlineKeyboardButton('Руководитель', callback_data='mark:roleRukov')
+)
+
+# подтверждение регистрации
+yesorno_registr_keyboard = InlineKeyboardMarkup().add(
+    InlineKeyboardButton('Да', callback_data='mark:ConfirmRegistr'),
+    InlineKeyboardButton('Нет', callback_data='mark:registr')
+)
+
+
+# подтверждение удаления аккаунта
+delete_account_keyboard = InlineKeyboardMarkup().add(
+    InlineKeyboardButton('Да', callback_data='mark:deleteAccount'),
+    InlineKeyboardButton('Нет', callback_data='mark:menu')
+)
+
+
 # Программа
 program_keyboard = InlineKeyboardMarkup().add(
     InlineKeyboardButton('Часть 1', callback_data='mark:programCh1'),
@@ -69,7 +90,9 @@ menu_keyboard = InlineKeyboardMarkup().row(
 button = KeyboardButton('Меню')
 menu_button = ReplyKeyboardMarkup(resize_keyboard=True).add(button)
 
-
+# кнопка Введение
+button_introduction = KeyboardButton('Введение')
+introduction_button = ReplyKeyboardMarkup(resize_keyboard=True).add(button)
 
 # Регистрация
 reg_keyboard = InlineKeyboardMarkup().add(
@@ -77,40 +100,18 @@ reg_keyboard = InlineKeyboardMarkup().add(
 )
 
 
+# ПЗ варианты ответов
 
+def createButAnswersPz(question):
+    pzOptions_keyboard = InlineKeyboardMarkup()
 
+    num = 0
+    for i in storage.dict_pzOptions[question]:
+        pzOptions_keyboard.add(InlineKeyboardButton(i, callback_data=f'mark:pzOpt{num}'))
+        num += 1
 
-# варианты ответов
-
-def createButAnswers():
-    answers_button = ReplyKeyboardMarkup(resize_keyboard=True)
-    lst_but = []
-    lst = 5
-    for i in range(1, lst+1):
-        answers_button.insert(KeyboardButton(str(i)))
-
-        # if(i % 3 == 0):
-        #     answers_button.insert(lst_but)
-        #     lst_but = []
-
-    return answers_button
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    pzOptions_keyboard.add(InlineKeyboardButton('Подтвердить', callback_data=f'mark:pzOptConfirm{question}'))
+    return pzOptions_keyboard
 
 
 # -------------------------------------------------------------------------

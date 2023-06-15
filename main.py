@@ -1,10 +1,15 @@
 import asyncio
 
+from aiogram.dispatcher import FSMContext
+
+import tool
+import storage
 from conf import token
 import but as kbs
 from asyncio import new_event_loop
 from aiogram import Bot, types, Dispatcher, executor
 from aiogram.types import CallbackQuery, InputFile, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, PollAnswer
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 # from aiogram.types.poll import PollAnswer
 
 from tool import instr_question1_handler, instr_question2_handler, instr_question3_handler, instr_question4_handler, \
@@ -14,12 +19,7 @@ import Connection
 loop = new_event_loop()
 
 bot = Bot(token=token, parse_mode="HTML")
-dp = Dispatcher(bot=bot, loop=loop)
-
-
-# @dp.message_handler()
-# async def echo(message: types.Message):
-#     await message.answer(text=message.text)
+dp = Dispatcher(bot=bot, loop=loop, storage=MemoryStorage())
 
 
 # @dp.message_handler(commands=["start"])
@@ -33,63 +33,6 @@ async def process_menu_message(message: types.Message):
     if message.text.lower() == 'меню':
         await bot.send_message(message.chat.id, 'Меню:', reply_markup=kbs.menu_keyboard)
 
-
-@dp.callback_query_handler(lambda x: x.data == 'history_but')
-async def instr_command(callback_query: types.CallbackQuery):
-    await bot.send_message(callback_query.from_user.id, 'Ответьте на вопросы теста:')
-
-    # Отправляем первый вопрос
-    await bot.send_message(callback_query.from_user.id, 'Какое событие привело к <b>началу</b> Первой мировой войны?⚔',
-                           reply_markup=kbs.question1_buttons)
-
-
-@dp.callback_query_handler(kbs.question1_cb.filter())
-async def question1_handler(callback_query: CallbackQuery, callback_data: dict):
-    answer = callback_data['answer']
-    while answer != 'b':
-        await callback_query.answer('Неправильно🤔.')
-    await callback_query.answer('Правильно👍!')
-    # Отправляем второй вопрос
-    await callback_query.message.answer('В каком году произошла Революция во <b>Франции</b>?',
-                                        reply_markup=kbs.question2_buttons)
-
-
-@dp.callback_query_handler(kbs.question2_cb.filter())
-async def question2_handler(callback_query: CallbackQuery, callback_data:
-dict):
-    answer = callback_data['answer']
-    while answer != 'a':
-        await callback_query.answer('Неправильно🤔.')
-    await callback_query.answer('Правильно👍!')
-    # Отправляем третий вопрос
-    await callback_query.message.answer('Кто был <b>первым</b> президентом Российской Федерации?',
-                                        reply_markup=kbs.question3_buttons)
-
-
-@dp.callback_query_handler(kbs.question3_cb.filter())
-async def question3_handler(callback_query: CallbackQuery, callback_data: dict):
-    answer = callback_data['answer']
-    while answer != 'b':
-        await callback_query.answer('Неправильно🤔.')
-    await callback_query.answer('Правильно👍!')
-    # Отправляем четвертый вопрос
-    await callback_query.message.answer('В каком году произошла Октябрьская революция в России?',
-                                        reply_markup=kbs.question4_buttons)
-
-
-@dp.callback_query_handler(kbs.question4_cb.filter())
-async def question4_handler(callback_query: CallbackQuery, callback_data: dict):
-    answer = callback_data['answer']
-    while answer != 'b':
-        await callback_query.answer('Неправильно🤔.')
-    await callback_query.answer('Правильно👍!')
-    # Завершаем тест
-    await callback_query.message.answer('Тест окончен🎉🎊. Спасибо за участие!👍')
-    await bot.send_sticker(chat_id=callback_query.from_user.id,
-                           sticker=r"CAACAgIAAxkBAAEI3U1kVQZGtdksjFg9CH636ma1ogc_XQACEBoAAocnIEjsWiTwN9NJuy8E")
-
-
-# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 kb = ReplyKeyboardMarkup(resize_keyboard=True)  # , one_time_keyboard=True
 
@@ -125,24 +68,122 @@ async def start_command(message: types.Message):
     #                        parse_mode="HTML",
     #                        reply_markup=kb)
     await bot.send_message(message.from_user.id, f'Привет {message.from_user.full_name}', reply_markup=kbs.menu_button)
-    await bot.send_message(message.from_user.id, f'Для полного фунционала, следует зарегестрироваться!',
+    await bot.send_message(message.from_user.id, f'Для полного фунционала, следует зарегистрироваться!',
                            reply_markup=kbs.reg_keyboard)
     # await message.answer(f"текст", reply_markup=kbs.menu_keyboard)
     await message.delete()
 
 
-
-
 @dp.callback_query_handler(kbs.cb.filter(action='registr'))
-async def vvedenie_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Выберите роль',
-                        options=['Студент',
-                                 'Дипломный руководитель',
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=False)
+async def choosing_role_command(message: types.Message):
+    conn = Connection.connect()
+    cursor = conn.cursor()
+
+    listss = []
+    cursor.execute("SELECT Id, LastName FROM Participant WHERE PersonID = ?", message.from_user.id)
+    coincidence = len(cursor.fetchall())
+
+    cursor.close()
+    conn.close()
+
+    if coincidence != 0:
+        await bot.send_message(message.from_user.id, f'Этот пользователь уже зарегистрирован.')
+        await bot.send_message(message.from_user.id, f'Вы желаете удалить аккаунт?',
+                               reply_markup=kbs.delete_account_keyboard)
+        return
+
+    await bot.send_message(message.from_user.id, f'Выберите свою роль.', reply_markup=kbs.role_keyboard)
+    # await message.delete()
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='deleteAccount'))
+async def choosing_role_command(message: types.Message):
+    if (storage.chh >= 3):
+        await bot.send_message(message.from_user.id, 'Хватит это делать! Забаню')
+        return
+    storage.chh += 1
+
+    await bot.send_message(message.from_user.id, 'В разработке')
+
+    # TODO доделать удаление аккаунта (надо удалить записи по вопросам)
+
+    #
+    # conn = Connection.connect()
+    # cursor = conn.cursor()
+    #
+    # cursor.execute("DELETE Participant WHERE PersonID = ?", message.from_user.id)
+    #
+    # cursor.commit()
+    # cursor.close()
+    # conn.close()
+    #
+    # await bot.send_message(message.from_user.id, 'Аккакунт удален')
+    # await bot.send_message(message.from_user.id, f'Для полного фунционала, следует зарегистрироваться!',
+    #                        reply_markup=kbs.reg_keyboard)
+
+
+@dp.message_handler(state=tool.Mydialog.otvet)
+async def process_message(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['text'] = message.text
+        user_message = data['text'].split()
+
+        if len(user_message) != 3:
+            await bot.send_message(message.from_user.id, 'Было распознано не 3 слова. Введите ФИО еще раз.')
+            return
+
+        storage.registr['patronymic'] = user_message.pop()
+        storage.registr['firstname'] = user_message.pop()
+        storage.registr['lastname'] = user_message.pop()
+
+        otvet_klienty = f"Ваше ФИО: {storage.registr['lastname']}, {storage.registr['firstname']}, {storage.registr['patronymic']} \n" \
+                        f"Ваша роль {('Руководитель', 'Студент')[storage.registr['role'] == 1]} \n" \
+                        f"Все верно?"
+
+        await bot.send_message(
+            message.from_user.id,
+            otvet_klienty,
+            parse_mode='HTML',
+            reply_markup=kbs.yesorno_registr_keyboard
+        )
+        # await message.delete()
+
+    await state.finish()
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='ConfirmRegistr'))
+async def confirm_registr_command(message: types.Message):
+    conn = Connection.connect()
+    cursor = conn.cursor()
+
+    sql = "exec [dbo].[CreateParticipant] ?, ?, ?, ?, ?"
+    params = (
+        storage.registr['lastname'], storage.registr['firstname'], storage.registr['patronymic'], message.from_user.id,
+        storage.registr['role']
+    )
+    cursor.execute(sql, (params))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    await bot.send_message(message.from_user.id, 'Регистрация завершена', reply_markup=kbs.menu_keyboard)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='roleStudent'))
+async def select_role_student_command(message: types.Message):
+    storage.registr['role'] = 1
+    await bot.send_message(message.from_user.id, 'Выбран студент')
+    await tool.Mydialog.otvet.set()
+    await bot.send_message(message.from_user.id, f'Введите свое ФИО. (В одну строку через пробел.)')
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='roleRukov'))
+async def select_role_rukov_command(message: types.Message):
+    storage.registr['role'] = 2
+    await bot.send_message(message.from_user.id, 'Выбран руководитель')
+    await tool.Mydialog.otvet.set()
+    await bot.send_message(message.from_user.id, f'Введите свое ФИО. (В одну строку через пробел.)')
 
 
 @dp.message_handler(commands=['description'])
@@ -165,6 +206,8 @@ async def group_command(message: types.Message):
     connect = Connection.connect()
     cursor = connect.cursor()
 
+    # TODO удалить метод по группам
+
     listss = []
     cursor.execute("SELECT Name FROM Groups")
     for row in cursor.fetchall():
@@ -178,217 +221,303 @@ async def group_command(message: types.Message):
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='Введение'))
-async def vvedenie_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='000 Есть ли у вас введение?',
-                        options=['Да',
-                                 'Нет',
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def vvedenie_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Есть ли у вас введение?',
+                           reply_markup=kbs.createButAnswersPz(1))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='Аннотация'))
-async def annotaion_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='001 Что содержит ваша аннотация?',
-                        options=['цель',
-                                 'задачи',
-                                 'требования',
-                                 'технологии и платформа',
-                                 'описание разделов'],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def annotaion_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Что содержит ваша аннотация?',
+                           reply_markup=kbs.createButAnswersPz(2))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='Обзор предметной области'))
-async def reviewsubarea_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    poll = await bot.send_poll(chat_id=call.message.chat.id,
-                        question='002 Присутсвует ли в вашей работе обзор предметной области?',
-                        options=['обзор предметной области?', 'содержит ли он ссылки на авторов?'],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
-    await asyncio.sleep(20)
-    await bot.delete_message(chat_id=call.message.chat.id, message_id=poll.message_id)
+async def reviewsubarea_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Присутсвует ли в вашей работе обзор предметной области?',
+                           reply_markup=kbs.createButAnswersPz(3))
 
-@dp.callback_query_handler(kbs.cb.filter(action='003 Обзор аналогов'))
-async def reviewanalog_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Содержится в вашем проекте обзор аналогов?',
-                        options=['Включает ли он необходимое количество аналогов?',
-                                 'Присутствуют ли у вас недостатки аналогов?'],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+
+@dp.callback_query_handler(kbs.cb.filter(action='Обзор аналогов'))
+async def reviewanalog_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Содержится в вашем проекте обзор аналогов?',
+                           reply_markup=kbs.createButAnswersPz(4))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='Моделирование'))
-async def modelir_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Ваша работа содержит моделирование?',
-                        options=['У вас присутствует схема?',
-                                 'Есть ли у вас описание элементов?'],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def modelir_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Ваша работа содержит моделирование?',
+                           reply_markup=kbs.createButAnswersPz(5))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='техническое задание'))
-async def techzad_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Указано ли у вас техническое задание?',
-                        options=['Содержатся требования к составу выполняемых функций?',
-                                 'Имеются требования к входным и выходным данным?(данные должны быть корректны,не менее 5-10 записей)',
-                                 'Содержатся требования к пользовательскому интерфейсу?',
-                                 'Включаеются ли требования к информационной и программной совместимости?',
-                                 'Прописаны этапы разработки?'
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def techzad_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Указано ли у вас техническое задание?',
+                           reply_markup=kbs.createButAnswersPz(6))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='архитектура программы'))
-async def arhitectprogr_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Присутствует у вас разработка архитектуры программы?',
-                        options=['У вас присутствует схема?',
-                                 'Есть ли у вас описание элементов?'
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def arhitectprogr_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Присутствует у вас разработка архитектуры программы?',
+                           reply_markup=kbs.createButAnswersPz(7))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='структуры данных'))
-async def structuredata_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Включена ли в работу разработка структуры данных?',
-                        options=['У вас присутствует схема?',
-                                 'Есть ли у вас описание элементов?'
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def structuredata_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Включена ли в работу разработка структуры данных?',
+                           reply_markup=kbs.createButAnswersPz(8))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='пользовательский интерфейс'))
-async def polinterf_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Присутствует у вас разработка архитектуры программы?',
-                        options=['У вас присутствует схема?',
-                                 'Есть ли у вас описание элементов?'
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def polinterf_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Присутствует у вас разработка архитектуры программы?',
+                           reply_markup=kbs.createButAnswersPz(9))
 
 
 # ----------------------------------------------------
 
 @dp.callback_query_handler(kbs.cb.filter(action='обработка событий и ошибок'))
-async def eventhandling_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Присутствует обработка событий и ошибок ввода данных?',
-                        options=['События обработаны?',
-                                 'Указаны спецификации обработчиков?'
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def eventhandling_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Присутствует обработка событий и ошибок ввода данных?',
+                           reply_markup=kbs.createButAnswersPz(10))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='программный алгоритм'))
-async def softwarealgorithm_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='У вас есть разработка программного алгоритма?',
-                        options=['Алгоритм разработан?',
-                                 'Содержатся спецификации функций или функциональных элементов?'
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def softwarealgorithm_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'У вас есть разработка программного алгоритма?',
+                           reply_markup=kbs.createButAnswersPz(11))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='интерфейс хранения данных'))
-async def datastorageinterface_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Включена в работу организация интерфейса хранения данных?',
-                        options=['Интерфейс разработан?',
-                                 'Присутствуют спецификации процедур или операций чтения-записи?'
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def datastorageinterface_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Включена в работу организация интерфейса хранения данных?',
+                           reply_markup=kbs.createButAnswersPz(12))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='тестирование'))
-async def testing_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Присутствует тестирование в вашей работе?',
-                        options=['Указаны примеры проверки в нормальных условиях?',
-                                 'Показаны примеры проверки в экстремальных условиях?'
-                                 'Указаны примеры проверки в исключительных условиях?'
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def testing_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Присутствует тестирование в вашей работе?',
+                           reply_markup=kbs.createButAnswersPz(13))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='руководство программиста'))
-async def programmerguide_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Указано ли у вас руководство программиста?',
-                        options=['Указаны характеристики?',
-                                 'Написано, какие входные и выходные данные?(данные должны быть корректны,не менее 5-10 записей)',
-                                 'Содержится настройка программы?'
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def programmerguide_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Указано ли у вас руководство программиста?',
+                           reply_markup=kbs.createButAnswersPz(14))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='руководство оператора'))
-async def operatormanual_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Есть ли руководство оператора?',
-                        options=['Рукводство функционально?',
-                                 'Написано сообщения оператору?'
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def operatormanual_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Есть ли руководство оператора?',
+                           reply_markup=kbs.createButAnswersPz(15))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='заключение'))
-async def conclusion_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Не забыли про заключение?',
-                        options=['Соотвествует ли результат работы поставленным целям?',
-                                 'В результате работы были выполнены поставленные задачи?',
-                                 'Были ли соблюдены требования при выполнении работы?',
-                                 'Результат содержит технологии и платформу?',
-                                 'Вы указали описание разделов в результате проделанной работы?',
-                                 'Вы уточнили внедрение и/или ожидаемый эффект?'
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def conclusion_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Не забыли про заключение?',
+                           reply_markup=kbs.createButAnswersPz(16))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='список литературы'))
-async def listliterature_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Присутсвует список литературы?',
-                        options=['Количество источников соотвествует требованиям?',
-                                 'Есть ли соответствие ГОСТу?'
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def listliterature_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Присутсвует список литературы?',
+                           reply_markup=kbs.createButAnswersPz(17))
+
+
+# --------------------------------------------------------------
+
+# кнопки подтверждения
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm1'))
+async def listliterature_command(message: types.Message):
+    connect = Connection.connect()
+    cursor = connect.cursor()
+
+    sql = "exec [dbo].[UpdateIntroduction] ?, ?"
+    params = (message.from_user.id, True)
+    cursor.execute(sql, (params))
+
+    connect.commit()
+    cursor.close()
+    connect.close()
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm2'))
+async def pzOptConfirm2_command(message: types.Message):
+    sql = "exec [dbo].[UpdateAnnotation] ?, ?, ?"
+    totalQuestions = 5
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm3'))
+async def pzOptConfirm3_command(message: types.Message):
+    sql = "exec [dbo].[UpdateSubjectAreaOverview] ?, ?, ?"
+    totalQuestions = 2
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm4'))
+async def pzOptConfirm4_command(message: types.Message):
+    sql = "exec [dbo].[UpdateOverviewOfAnalags] ?, ?, ?"
+    totalQuestions = 2
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm5'))
+async def pzOptConfirm5_command(message: types.Message):
+    sql = "exec [dbo].[UpdateModeling] ?, ?, ?"
+    totalQuestions = 2
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm6'))
+async def pzOptConfirm6_command(message: types.Message):
+    sql = "exec [dbo].[UpdateTechnicalSpecification] ?, ?, ?"
+    totalQuestions = 5
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm7'))
+async def pzOptConfirm7_command(message: types.Message):
+    sql = "exec [dbo].[UpdateDevelopmentProgramArchitecture] ?, ?, ?"
+    totalQuestions = 2
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm8'))
+async def pzOptConfirm8_command(message: types.Message):
+    sql = "exec [dbo].[UpdateDataStructureDevelopment] ?, ?, ?"
+    totalQuestions = 2
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm9'))
+async def pzOptConfirm9_command(message: types.Message):
+    sql = "exec [dbo].[UpdateUserInterface] ?, ?, ?"
+    totalQuestions = 2
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm10'))
+async def pzOptConfirm10_command(message: types.Message):
+    sql = "exec [dbo].[UpdateHandlingEventsDataEntryErrors] ?, ?, ?"
+    totalQuestions = 2
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm11'))
+async def pzOptConfirm11_command(message: types.Message):
+    sql = "exec [dbo].[UpdateDevelopmentSoftwareAlgorithm] ?, ?, ?"
+    totalQuestions = 2
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm12'))
+async def pzOptConfirm12_command(message: types.Message):
+    sql = "exec [dbo].[UpdateOrganizationDataStorageInterface] ?, ?, ?"
+    totalQuestions = 2
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm13'))
+async def pzOptConfirm13_command(message: types.Message):
+    sql = "exec [dbo].[UpdateTesting]  ?, ?, ?"
+    totalQuestions = 3
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm14'))
+async def pzOptConfirm14_command(message: types.Message):
+    sql = "exec [dbo].[UpdateProgrammerGuide] ?, ?, ?"
+    totalQuestions = 3
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm15'))
+async def pzOptConfirm15_command(message: types.Message):
+    sql = "exec [dbo].[UpdateOperatorManual] ?, ?, ?"
+    totalQuestions = 2
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm16'))
+async def pzOptConfirm16_command(message: types.Message):
+    sql = "exec [dbo].[UpdateConclusion] ?, ?, ?"
+    totalQuestions = 6
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm17'))
+async def pzOptConfirm17_command(message: types.Message):
+    sql = "exec [dbo].[UpdateListLiterature] ?, ?, ?"
+    totalQuestions = 2
+    tool.update_answers(message.from_user.id, sql, totalQuestions)
+
+
+# ----------------------------------------------------------
+
+# Добавление выбранных ответов
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOpt1'))
+async def pzopt1_command(message: types.Message):
+    storage.Options_answ.append('1')
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOpt2'))
+async def pzopt2_command(message: types.Message):
+    storage.Options_answ.append('2')
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOpt3'))
+async def pzopt3_command(message: types.Message):
+    storage.Options_answ.append('3')
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOpt4'))
+async def pzopt4_command(message: types.Message):
+    storage.Options_answ.append('4')
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOpt5'))
+async def pzopt5_command(message: types.Message):
+    storage.Options_answ.append('5')
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOpt6'))
+async def pzopt6_command(message: types.Message):
+    storage.Options_answ.append('6')
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOpt7'))
+async def pzopt7_command(message: types.Message):
+    storage.Options_answ.append('7')
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOpt8'))
+async def pzopt8_command(message: types.Message):
+    storage.Options_answ.append('8')
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOpt9'))
+async def pzopt9_command(message: types.Message):
+    storage.Options_answ.append('9')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pz'))
@@ -402,25 +531,9 @@ async def process_menu_message(message: types.Message):
         await bot.send_message(message.chat.id, 'Меню:', reply_markup=kbs.menu_keyboard)
 
 
-@dp.poll_answer_handler()
-async def handle_poll_answer(poll: PollAnswer):
-
-
-    # обработка ответа пользователя
-    await bot.send_message(poll.user.id, "Спасибо за ответ!")
-    # удаление опроса
-
-
-    connect = Connection.connect()
-    cursor = connect.cursor()
-    interests = str(poll['option_ids'])
-    user_id = poll['user']['id']
-
-    cursor.execute("""INSERT INTO [Groups](Name) VALUES(?) """, [interests])
-
-    cursor.close()
-    connect.commit()
-    connect.close()
+@dp.callback_query_handler(kbs.cb.filter(action='menu'))
+async def process_menu_message(message: types.Message):
+    await bot.send_message(message.chat.id, 'Меню:', reply_markup=kbs.menu_keyboard)
 
 
 # --------------------------------------------------------------------------------
@@ -463,10 +576,6 @@ async def po_command(call: CallbackQuery):
                         ],
                         is_anonymous=False,
                         allows_multiple_answers=True)
-
-
-
-
 
 
 if __name__ == '__main__':
