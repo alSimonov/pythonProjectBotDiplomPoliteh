@@ -28,27 +28,15 @@ cb = CallbackData('mark', 'action')
 
 
 def createButPz():
-    group_keyboard = InlineKeyboardMarkup()
+    keyboard = InlineKeyboardMarkup()
     lst_button = []
     for i in list_pz:
         lst_button.append(InlineKeyboardButton(i, callback_data=f'mark:{i}'))
 
     for i in lst_button:
-        group_keyboard.add(i)
+        keyboard.add(i)
 
-    return group_keyboard
-
-
-def createButGroups(lst):
-    group_keyboard = InlineKeyboardMarkup()
-    lst_button = []
-    for i in (lst):
-        lst_button.append(InlineKeyboardButton(i, url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"))
-
-    for i in lst_button:
-        group_keyboard.add(i)
-
-    return group_keyboard
+    return keyboard
 
 
 # выбор роли
@@ -63,13 +51,11 @@ yesorno_registr_keyboard = InlineKeyboardMarkup().add(
     InlineKeyboardButton('Нет', callback_data='mark:registr')
 )
 
-
 # подтверждение удаления аккаунта
 delete_account_keyboard = InlineKeyboardMarkup().add(
     InlineKeyboardButton('Да', callback_data='mark:deleteAccount'),
     InlineKeyboardButton('Нет', callback_data='mark:menu')
 )
-
 
 # Программа
 program_keyboard = InlineKeyboardMarkup().add(
@@ -113,6 +99,13 @@ def createButAnswersPz(question):
     pzOptions_keyboard.add(InlineKeyboardButton('Подтвердить', callback_data=f'mark:pzOptConfirm{question}'))
     return pzOptions_keyboard
 
+
+# ПЗ Введение варианты ответов
+
+Introduction_keyboard = InlineKeyboardMarkup().add(InlineKeyboardButton('Да', callback_data='mark:pzOptTrue'),
+                                                   InlineKeyboardButton('Нет', callback_data='mark:pzOptFalse'))
+
+Introduction_keyboard.add(InlineKeyboardButton('Подтвердить', callback_data='mark:pzOptConfirm1'))
 
 # -------------------------------------------------------------------------
 

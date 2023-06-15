@@ -12,8 +12,7 @@ from aiogram.types import CallbackQuery, InputFile, ReplyKeyboardMarkup, ReplyKe
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 # from aiogram.types.poll import PollAnswer
 
-from tool import instr_question1_handler, instr_question2_handler, instr_question3_handler, instr_question4_handler, \
-    structure_command
+
 import Connection
 
 loop = new_event_loop()
@@ -98,28 +97,21 @@ async def choosing_role_command(message: types.Message):
 
 @dp.callback_query_handler(kbs.cb.filter(action='deleteAccount'))
 async def choosing_role_command(message: types.Message):
-    if (storage.chh >= 3):
-        await bot.send_message(message.from_user.id, 'Хватит это делать! Забаню')
-        return
-    storage.chh += 1
 
-    await bot.send_message(message.from_user.id, 'В разработке')
+    conn = Connection.connect()
+    cursor = conn.cursor()
 
-    # TODO доделать удаление аккаунта (надо удалить записи по вопросам)
+    sql = "exec [dbo].[DropRecord] ? "
+    params = message.from_user.id
+    cursor.execute(sql, (params))
 
-    #
-    # conn = Connection.connect()
-    # cursor = conn.cursor()
-    #
-    # cursor.execute("DELETE Participant WHERE PersonID = ?", message.from_user.id)
-    #
-    # cursor.commit()
-    # cursor.close()
-    # conn.close()
-    #
-    # await bot.send_message(message.from_user.id, 'Аккакунт удален')
-    # await bot.send_message(message.from_user.id, f'Для полного фунционала, следует зарегистрироваться!',
-    #                        reply_markup=kbs.reg_keyboard)
+    cursor.commit()
+    cursor.close()
+    conn.close()
+
+    await bot.send_message(message.from_user.id, 'Аккакунт удален')
+    await bot.send_message(message.from_user.id, f'Для полного фунционала, следует зарегистрироваться!',
+                           reply_markup=kbs.reg_keyboard)
 
 
 @dp.message_handler(state=tool.Mydialog.otvet)
@@ -201,30 +193,11 @@ async def photo_command(message: types.Message):
     await message.delete()
 
 
-@dp.message_handler(commands=['groups'])
-async def group_command(message: types.Message):
-    connect = Connection.connect()
-    cursor = connect.cursor()
-
-    # TODO удалить метод по группам
-
-    listss = []
-    cursor.execute("SELECT Name FROM Groups")
-    for row in cursor.fetchall():
-        listss.append(str(row)[2:-3])
-
-    cursor.close()
-    connect.close()
-
-    await bot.send_message(message.from_user.id, 'Группы', reply_markup=kbs.createButGroups(listss))
-    await message.delete()
-
-
 @dp.callback_query_handler(kbs.cb.filter(action='Введение'))
 async def vvedenie_command(message: types.Message):
     storage.Options_answ = []
-    await bot.send_message(message.from_user.id, f'Есть ли у вас введение?',
-                           reply_markup=kbs.createButAnswersPz(1))
+    storage.message_temp =  await bot.send_message(message.from_user.id, f'Есть ли у вас введение?',
+                           reply_markup=kbs.Introduction_keyboard)
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='Аннотация'))
@@ -351,12 +324,14 @@ async def listliterature_command(message: types.Message):
     cursor = connect.cursor()
 
     sql = "exec [dbo].[UpdateIntroduction] ?, ?"
-    params = (message.from_user.id, True)
+    params = (message.from_user.id, storage.Options_answ_TrueFalse)
     cursor.execute(sql, (params))
 
     connect.commit()
     cursor.close()
     connect.close()
+
+    # asyncio.create_task(tool.delete_message(storage.messageid_temp))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm2'))
@@ -474,6 +449,20 @@ async def pzOptConfirm17_command(message: types.Message):
 # ----------------------------------------------------------
 
 # Добавление выбранных ответов
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptTrue'))
+async def pzopt1_command(message: types.Message):
+    storage.Options_answ_TrueFalse = True
+
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOptFalse'))
+async def pzopt1_command(message: types.Message):
+    storage.Options_answ_TrueFalse = False
+
+
+
+# ----------------------------------------------------------
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOpt1'))
 async def pzopt1_command(message: types.Message):

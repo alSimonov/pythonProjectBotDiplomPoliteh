@@ -63,7 +63,14 @@ registr = {
 }
 
 
-chh = 0
+
+messageid_temp = None
+
+
+
+# answers
+
+Options_answ_TrueFalse = False
 
 Options_answ = []
 
