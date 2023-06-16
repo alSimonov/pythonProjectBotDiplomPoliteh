@@ -535,36 +535,26 @@ async def po_command(call: CallbackQuery):
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='programCh1'))
-async def po_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Что есть в вашей программе? Часть 1',
-                        options=['Запускается ли ваше ПО?',
-                                 'Соответствует программа ТЗ?',
-                                 'В вашем программном обеспечении есть схема данных?',
-                                 'Авторизация присутствует в вашем ПО?',
-                                 'Содержит ли ПО следующие осн функции: фильтр, расч. и др?',
-                                 'Включена в вашей ПО обработка ошибок?',
-                                 ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def po_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Что есть в вашей программе? Часть 1',
+                           reply_markup=kbs.createButAnswersProgram(1))
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='programCh2'))
-async def po_command(call: CallbackQuery):
-    await call.answer(cache_time=10)
-    await bot.send_poll(chat_id=call.message.chat.id,
-                        question='Что есть в вашей программе? Часть 2',
-                        options=[
-                            'Присутствует русификация в вашем проекте?',
-                            'Вы указали справку в вашем ПО?',
-                            'Присутствует ли заполнение данными?',
-                            'Содержатся отчеты?',
-                            'Включено ли журналирование и другие дополнительные функции?',
-                            'Ваша программа содержит дружелюбный интерфейс?'
-                        ],
-                        is_anonymous=False,
-                        allows_multiple_answers=True)
+async def po_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Что есть в вашей программе? Часть 2',
+                           reply_markup=kbs.createButAnswersProgram(2))
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='programOptConfirm'))
+async def OptConfirmProgram_command(message: types.Message):
+    sql = "exec [dbo].[UpdateSoftware] ?, ?, ?"
+    totalQuestions = 12
+    tool.update_answers_program(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, 'Подтверждено:')
+
 
 
 if __name__ == '__main__':

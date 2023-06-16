@@ -3,26 +3,6 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from aiogram.utils.callback_data import CallbackData
 import storage
 
-list_pz = [
-    'Введение',
-    'Аннотация',
-    'Обзор предметной области',
-    'Обзор аналогов',
-    'Моделирование',
-    'техническое задание',
-    'архитектура программы',
-    'структуры данных',
-    'пользовательский интерфейс',
-    'обработка событий и ошибок',
-    'программный алгоритм',
-    'интерфейс хранения данных',
-    'тестирование',
-    'руководство программиста',
-    'руководство оператора',
-    'заключение',
-    'список литературы'
-
-]
 
 cb = CallbackData('mark', 'action')
 
@@ -30,7 +10,7 @@ cb = CallbackData('mark', 'action')
 def createButPz():
     keyboard = InlineKeyboardMarkup()
     lst_button = []
-    for i in list_pz:
+    for i in storage.list_pz:
         lst_button.append(InlineKeyboardButton(i, callback_data=f'mark:{i}'))
 
     for i in lst_button:
@@ -89,15 +69,30 @@ reg_keyboard = InlineKeyboardMarkup().add(
 # ПЗ варианты ответов
 
 def createButAnswersPz(question):
-    pzOptions_keyboard = InlineKeyboardMarkup()
+    keyboard = InlineKeyboardMarkup()
 
     num = 0
     for i in storage.dict_pzOptions[question]:
-        pzOptions_keyboard.add(InlineKeyboardButton(i, callback_data=f'mark:pzOpt{num}'))
+        keyboard.add(InlineKeyboardButton(i, callback_data=f'mark:pzOpt{num}'))
         num += 1
 
-    pzOptions_keyboard.add(InlineKeyboardButton('Подтвердить', callback_data=f'mark:pzOptConfirm{question}'))
-    return pzOptions_keyboard
+    keyboard.add(InlineKeyboardButton('Подтвердить', callback_data=f'mark:pzOptConfirm{question}'))
+    return keyboard
+
+
+# программа варианты ответов
+
+
+def createButAnswersProgram(question):
+    keyboard = InlineKeyboardMarkup()
+
+    num = 0
+    for i in storage.dict_program_options[question]:
+        keyboard.add(InlineKeyboardButton(i, callback_data=f'mark:pzOpt{num}'))
+        num += 1
+
+    keyboard.add(InlineKeyboardButton('Подтвердить', callback_data=f'mark:programOptConfirm'))
+    return keyboard
 
 
 # ПЗ Введение варианты ответов
