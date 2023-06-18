@@ -1,8 +1,9 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from aiogram.utils.callback_data import CallbackData
-import storage
 
+import Connection
+import storage
 
 cb = CallbackData('mark', 'action')
 
@@ -45,12 +46,20 @@ program_keyboard = InlineKeyboardMarkup().add(
 
 # это наше меню
 menu_keyboard = InlineKeyboardMarkup().row(
-    InlineKeyboardButton('Секрет', url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
-    InlineKeyboardButton('Наши фото', url="https://www.youtube.com/watch?v=pVHKp6ffURY")
+    InlineKeyboardButton('Регистрация', callback_data='mark:registr'),
+    InlineKeyboardButton('Руководитель', callback_data='mark:rukovUpdate')
 ).add(
     InlineKeyboardButton('ПЗ', callback_data='mark:pz'),
     InlineKeyboardButton('Программа', callback_data='mark:program')
 )
+
+# меню для руководителей
+menu_forRukov_keyboard = InlineKeyboardMarkup().row(
+    InlineKeyboardButton('Регистрация', callback_data='mark:registr')
+).add(InlineKeyboardButton('Студенты', callback_data='mark:getStudents'))
+
+
+
 
 # кнопка
 button = KeyboardButton('Меню')
@@ -66,12 +75,83 @@ reg_keyboard = InlineKeyboardMarkup().add(
 )
 
 
+# Вывод руководителей
+
+def createButRukov():
+    storage.lst_rukov = []
+
+    keyboard = InlineKeyboardMarkup()
+
+    conn = Connection.connect()
+    cursor = conn.cursor()
+
+    str_temp = ""
+    cursor.execute(
+        "SELECT [Id], [LastName], [FirstName], [Patronymic] FROM [Participant] WHERE IdRole = (SELECT Id FROM [Role] WHERE [Name] = ?)",
+        'Руководитель')
+    for row in cursor.fetchall():
+        str_temp = str(row)[1:-1].replace("'", "").replace(" ", "").split(",")
+        n_str_temp = f'{str_temp[1]} {str_temp[2][0]}. {str_temp[3][0]}.'
+        storage.lst_rukov.append([str_temp[0], n_str_temp])
+
+    cursor.close()
+    conn.close()
+
+    num = 1
+    for i in storage.lst_rukov:
+        keyboard.add(InlineKeyboardButton(i[1], callback_data=f'mark:pzOpt{num}'))
+        num += 1
+
+    keyboard.add(InlineKeyboardButton('Подтвердить', callback_data=f'mark:rukovOptConfirm'))
+    return keyboard
+
+
+rukov_update_keyboard = InlineKeyboardMarkup().add(InlineKeyboardButton('Изменить', callback_data='mark:getRukov'))
+
+
+# Вывод студентов
+
+def createButStudents(idPerson):
+    keyboard = InlineKeyboardMarkup()
+
+    conn = Connection.connect()
+    cursor = conn.cursor()
+
+    cursor.execute("exec [dbo].[GetStudentsBySuperviser] ?", str(idPerson))
+
+    storage.lst_students[idPerson] = []
+    for row in cursor.fetchall():
+
+        str_temp = str(row)[1:-1].replace("'", "").replace(" ", "").split(",")
+        n_str_temp = f'{str_temp[1]} {str_temp[2][0]}. {str_temp[3][0]}.'
+        storage.lst_students[idPerson].append([str_temp[0], n_str_temp])
+
+    studentsTemp = storage.lst_students.get(idPerson)
+
+    cursor.close()
+    conn.close()
+
+    if studentsTemp == None:
+        return
+
+
+    num = 1
+    for i in studentsTemp:
+        keyboard.add(InlineKeyboardButton(i[1], callback_data=f'mark:pzOpt{num}'))
+        num += 1
+
+    keyboard.add(InlineKeyboardButton('Подтвердить', callback_data=f'mark:SelectStudentConfirm'))
+    return keyboard
+
+
+
+
 # ПЗ варианты ответов
 
 def createButAnswersPz(question):
     keyboard = InlineKeyboardMarkup()
 
-    num = 0
+    num = 1
     for i in storage.dict_pzOptions[question]:
         keyboard.add(InlineKeyboardButton(i, callback_data=f'mark:pzOpt{num}'))
         num += 1
@@ -86,12 +166,12 @@ def createButAnswersPz(question):
 def createButAnswersProgram(question):
     keyboard = InlineKeyboardMarkup()
 
-    num = 0
+    num = (7, 1)[question == 1]
     for i in storage.dict_program_options[question]:
         keyboard.add(InlineKeyboardButton(i, callback_data=f'mark:pzOpt{num}'))
         num += 1
 
-    keyboard.add(InlineKeyboardButton('Подтвердить', callback_data=f'mark:programOptConfirm'))
+    keyboard.add(InlineKeyboardButton('Подтвердить', callback_data=f'mark:programOptConfirm{question}'))
     return keyboard
 
 

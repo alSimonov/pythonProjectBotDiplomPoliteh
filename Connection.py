@@ -1,5 +1,7 @@
 import pyodbc
 
+import storage
+
 s = 'DESKTOP-IBJCCC1'  # Your server name
 d = 'DiplomBotDB'  # Your database name
 u = 'admin'  # Your login
@@ -13,11 +15,28 @@ def connect():
 
 # conn = connect()
 # cursor = conn.cursor()
-#
-#
+
+
+# cursor.execute("exec [dbo].[GetStudentsBySuperviser] ?", '1481918994')
+# for row in cursor.fetchall():
+#     print(row)
+
+
+# str_temp = ""
+# cursor.execute("SELECT [Id], [LastName], [FirstName], [Patronymic] FROM [Participant] WHERE IdRole = (SELECT Id FROM [Role] WHERE [Name] = ?)",
+#                'Руководитель')
+# for row in cursor.fetchall():
+#     str_temp = str(row)[1:-1].replace("'", "").replace(" ", "").split(",")
+#     n_str_temp = f'{str_temp[1]} {str_temp[2][0]}. {str_temp[3][0]}.'
+#     storage.lst_rukov.append([str_temp[0], n_str_temp])
+
+
+
+
 # cursor.execute("DELETE Participant WHERE PersonID = ?", '1481918994')
 #
-# cursor.execute("SELECT Id, LastName FROM Participant WHERE PersonID = ?", '1481918994')
+# cursor.execute("
+# SELECT Id, LastName FROM Participant WHERE PersonID = ?", '1481918994')
 # print(len(cursor.fetchall()))
 #
 #

@@ -38,20 +38,19 @@ def update_answers(userId, sql, totalQuestions):
     storage.Options_answ = []
 
 
-def update_answers_program(userId, sql, totalQuestions):
+def update_answers_program(userId, sqlOut , sql, totalQuestions):
     connect = Connection.connect()
     cursor = connect.cursor()
 
     str_temp = ""
-    cursor.execute("SELECT [Answers] FROM UpdateConclusion WHERE Id = (SELECT Id FROM Participant WHERE PersonID = ?)",
-                   userId)
+    cursor.execute(sqlOut, userId)
     for row in cursor.fetchall():
-        str_temp = str(row)[2:-3]
+        str_temp = str(row)[2: -3]
 
     lst_temp = str_temp.split(',')
 
-    result = len(storage.Options_answ) / totalQuestions
-    params = (str(userId), ",".join(set(lst_temp + storage.Options_answ)), result)
+    result = (len(storage.Options_answ) + len(lst_temp)) / totalQuestions
+    params = (str(userId), ",".join(storage.Options_answ), result)
     cursor.execute(sql, (params))
 
     connect.commit()

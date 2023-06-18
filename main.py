@@ -1,7 +1,7 @@
 import asyncio
 
 from aiogram.dispatcher import FSMContext
-
+import random
 import tool
 import storage
 from conf import token
@@ -26,11 +26,11 @@ dp = Dispatcher(bot=bot, loop=loop, storage=MemoryStorage())
 #     await bot.send_message(message.from_user.id, "Привет", reply_markup=kbs.menu_button)
 #     await message.answer(f"текст", reply_markup=kbs.menu_keyboard)
 
-
-@dp.message_handler(text='Меню')
-async def process_menu_message(message: types.Message):
-    if message.text.lower() == 'меню':
-        await bot.send_message(message.chat.id, 'Меню:', reply_markup=kbs.menu_keyboard)
+#
+# @dp.message_handler(text='Меню')
+# async def process_menu_message(message: types.Message):
+#     if message.text.lower() == 'меню':
+#         await bot.send_message(message.chat.id, 'Меню:', reply_markup=kbs.menu_keyboard)
 
 
 kb = ReplyKeyboardMarkup(resize_keyboard=True)  # , one_time_keyboard=True
@@ -193,11 +193,73 @@ async def photo_command(message: types.Message):
     await message.delete()
 
 
+# ------------------------------------------------------------------------------
+
+@dp.callback_query_handler(kbs.cb.filter(action='rukovUpdate'))
+async def getRukov_command(message: types.Message):
+
+    currentRuk = ''
+
+    conn = Connection.connect()
+    cursor = conn.cursor()
+
+    str_temp = ""
+    cursor.execute("exec [dbo].[GetCurrentSuperviser] ?", message.from_user.id)
+    for row in cursor.fetchall():
+        str_temp = str(row)[1:-1].replace("'", "").replace(" ", "").split(",")
+        n_str_temp = f'{str_temp[0]} {str_temp[1][0]}. {str_temp[2][0]}.'
+        currentRuk = n_str_temp
+
+    cursor.close()
+    conn.close()
+
+
+
+    currentRukStr = (currentRuk, 'не указан')[currentRuk == '']
+    await bot.send_message(message.from_user.id, f'Ваш текущий дипломный руководитель: \n{currentRukStr}',
+                           reply_markup=kbs.rukov_update_keyboard)
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='getRukov'))
+async def getRukov_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Выберите своего дипломного руководителя.',
+                           reply_markup=kbs.createButRukov())
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='rukovOptConfirm'))
+async def getRukov_command(message: types.Message):
+    temp = int(storage.Options_answ[-1]) - 1
+    idSuperviser = int(storage.lst_rukov[temp][0])
+
+
+    connect = Connection.connect()
+    cursor = connect.cursor()
+
+    sql = "exec [dbo].[UpdateStudendtSuperviser] ?, ?"
+    params = (message.from_user.id, idSuperviser)
+    cursor.execute(sql, (params))
+
+    connect.commit()
+    cursor.close()
+    connect.close()
+
+    await bot.send_message(message.from_user.id, f'Вашим дипломным руководителем выбран:\n{storage.lst_rukov[temp][1]}')
+
+
+# ------------------------------------------------------------------------------
+
+
+# ПЗ Вывод вопросов
+
+# ------------------------------------------------------------------------------
+
 @dp.callback_query_handler(kbs.cb.filter(action='Введение'))
 async def vvedenie_command(message: types.Message):
     storage.Options_answ = []
-    storage.message_temp =  await bot.send_message(message.from_user.id, f'Есть ли у вас введение?',
+    await bot.send_message(message.from_user.id, f'Есть ли у вас введение?',
                            reply_markup=kbs.Introduction_keyboard)
+    # await bot.delete_message(message.from_user.id, message.message_id)
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='Аннотация'))
@@ -256,8 +318,6 @@ async def polinterf_command(message: types.Message):
                            reply_markup=kbs.createButAnswersPz(9))
 
 
-# ----------------------------------------------------
-
 @dp.callback_query_handler(kbs.cb.filter(action='обработка событий и ошибок'))
 async def eventhandling_command(message: types.Message):
     storage.Options_answ = []
@@ -313,10 +373,12 @@ async def listliterature_command(message: types.Message):
     await bot.send_message(message.from_user.id, f'Присутсвует список литературы?',
                            reply_markup=kbs.createButAnswersPz(17))
 
+# ------------------------------------------------------------------------------
 
-# --------------------------------------------------------------
 
-# кнопки подтверждения
+# ПЗ Подтверждение отмеченных ответов
+
+# ------------------------------------------------------------------------------
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm1'))
 async def listliterature_command(message: types.Message):
@@ -332,6 +394,9 @@ async def listliterature_command(message: types.Message):
     connect.close()
 
     # asyncio.create_task(tool.delete_message(storage.messageid_temp))
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
+
+
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm2'))
@@ -339,6 +404,7 @@ async def pzOptConfirm2_command(message: types.Message):
     sql = "exec [dbo].[UpdateAnnotation] ?, ?, ?"
     totalQuestions = 5
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm3'))
@@ -346,6 +412,7 @@ async def pzOptConfirm3_command(message: types.Message):
     sql = "exec [dbo].[UpdateSubjectAreaOverview] ?, ?, ?"
     totalQuestions = 2
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm4'))
@@ -353,6 +420,7 @@ async def pzOptConfirm4_command(message: types.Message):
     sql = "exec [dbo].[UpdateOverviewOfAnalags] ?, ?, ?"
     totalQuestions = 2
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm5'))
@@ -360,6 +428,7 @@ async def pzOptConfirm5_command(message: types.Message):
     sql = "exec [dbo].[UpdateModeling] ?, ?, ?"
     totalQuestions = 2
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm6'))
@@ -367,6 +436,7 @@ async def pzOptConfirm6_command(message: types.Message):
     sql = "exec [dbo].[UpdateTechnicalSpecification] ?, ?, ?"
     totalQuestions = 5
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm7'))
@@ -374,6 +444,7 @@ async def pzOptConfirm7_command(message: types.Message):
     sql = "exec [dbo].[UpdateDevelopmentProgramArchitecture] ?, ?, ?"
     totalQuestions = 2
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm8'))
@@ -381,6 +452,7 @@ async def pzOptConfirm8_command(message: types.Message):
     sql = "exec [dbo].[UpdateDataStructureDevelopment] ?, ?, ?"
     totalQuestions = 2
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm9'))
@@ -388,6 +460,7 @@ async def pzOptConfirm9_command(message: types.Message):
     sql = "exec [dbo].[UpdateUserInterface] ?, ?, ?"
     totalQuestions = 2
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm10'))
@@ -395,6 +468,7 @@ async def pzOptConfirm10_command(message: types.Message):
     sql = "exec [dbo].[UpdateHandlingEventsDataEntryErrors] ?, ?, ?"
     totalQuestions = 2
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm11'))
@@ -402,6 +476,7 @@ async def pzOptConfirm11_command(message: types.Message):
     sql = "exec [dbo].[UpdateDevelopmentSoftwareAlgorithm] ?, ?, ?"
     totalQuestions = 2
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm12'))
@@ -409,6 +484,7 @@ async def pzOptConfirm12_command(message: types.Message):
     sql = "exec [dbo].[UpdateOrganizationDataStorageInterface] ?, ?, ?"
     totalQuestions = 2
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm13'))
@@ -416,6 +492,7 @@ async def pzOptConfirm13_command(message: types.Message):
     sql = "exec [dbo].[UpdateTesting]  ?, ?, ?"
     totalQuestions = 3
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm14'))
@@ -423,6 +500,7 @@ async def pzOptConfirm14_command(message: types.Message):
     sql = "exec [dbo].[UpdateProgrammerGuide] ?, ?, ?"
     totalQuestions = 3
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm15'))
@@ -430,6 +508,7 @@ async def pzOptConfirm15_command(message: types.Message):
     sql = "exec [dbo].[UpdateOperatorManual] ?, ?, ?"
     totalQuestions = 2
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm16'))
@@ -437,6 +516,7 @@ async def pzOptConfirm16_command(message: types.Message):
     sql = "exec [dbo].[UpdateConclusion] ?, ?, ?"
     totalQuestions = 6
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm17'))
@@ -444,6 +524,10 @@ async def pzOptConfirm17_command(message: types.Message):
     sql = "exec [dbo].[UpdateListLiterature] ?, ?, ?"
     totalQuestions = 2
     tool.update_answers(message.from_user.id, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
+
+
+# ------------------------------------------------------------------------------
 
 
 # ----------------------------------------------------------
@@ -461,6 +545,10 @@ async def pzopt1_command(message: types.Message):
     storage.Options_answ_TrueFalse = False
 
 
+
+# ----------------------------------------------------------
+
+# добавление отмеченных ответов в список в storage
 
 # ----------------------------------------------------------
 
@@ -509,6 +597,24 @@ async def pzopt9_command(message: types.Message):
     storage.Options_answ.append('9')
 
 
+@dp.callback_query_handler(kbs.cb.filter(action='pzOpt10'))
+async def pzopt10_command(message: types.Message):
+    storage.Options_answ.append('10')
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOpt11'))
+async def pzopt11_command(message: types.Message):
+    storage.Options_answ.append('11')
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='pzOpt12'))
+async def pzopt12_command(message: types.Message):
+    storage.Options_answ.append('12')
+
+# ----------------------------------------------------------
+
+
+
 @dp.callback_query_handler(kbs.cb.filter(action='pz'))
 async def pz_command(call: CallbackQuery):
     await bot.send_message(call.message.chat.id, 'Пояснительная записка:', reply_markup=kbs.createButPz())
@@ -517,14 +623,51 @@ async def pz_command(call: CallbackQuery):
 @dp.message_handler(text='Меню')
 async def process_menu_message(message: types.Message):
     if message.text.lower() == 'меню':
-        await bot.send_message(message.chat.id, 'Меню:', reply_markup=kbs.menu_keyboard)
+
+        connect = Connection.connect()
+        cursor = connect.cursor()
+
+        sql = "exec [dbo].GetParticipantRole ?"
+        params = (message.from_user.id)
+        cursor.execute(sql, (params))
+
+        idRole = str(cursor.fetchall())[2:-3]
+
+        cursor.close()
+        connect.close()
+
+        if idRole == '1':
+            await bot.send_message(message.chat.id, 'Меню:', reply_markup=kbs.menu_keyboard)
+
+        elif idRole == '2':
+            await bot.send_message(message.chat.id, 'Меню:', reply_markup=kbs.menu_forRukov_keyboard)
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='menu'))
-async def process_menu_message(message: types.Message):
-    await bot.send_message(message.chat.id, 'Меню:', reply_markup=kbs.menu_keyboard)
+async def process_mmenu_message(message: types.Message):
+    connect = Connection.connect()
+    cursor = connect.cursor()
+
+    sql = "exec [dbo].GetParticipantRole ?"
+    params = (message.from_user.id)
+    cursor.execute(sql, (params))
+
+    idRole = str(cursor.fetchall())[2:-3]
+
+    cursor.close()
+    connect.close()
+
+    if idRole == 1:
+        await bot.send_message(message.chat.id, 'Меню:', reply_markup=kbs.menu_keyboard)
+
+    elif idRole == 2:
+        await bot.send_message(message.chat.id, 'Меню:', reply_markup=kbs.menu_forRukov_keyboard)
 
 
+
+# --------------------------------------------------------------------------------
+
+# Все по программе
 # --------------------------------------------------------------------------------
 
 
@@ -548,12 +691,55 @@ async def po_command(message: types.Message):
                            reply_markup=kbs.createButAnswersProgram(2))
 
 
-@dp.callback_query_handler(kbs.cb.filter(action='programOptConfirm'))
-async def OptConfirmProgram_command(message: types.Message):
-    sql = "exec [dbo].[UpdateSoftware] ?, ?, ?"
+@dp.callback_query_handler(kbs.cb.filter(action='programOptConfirm1'))
+async def OptConfirmProgram1_command(message: types.Message):
+    sqlOut = "SELECT [Answers2] FROM [StatitisticSoftware] WHERE Id = (SELECT Id FROM Participant WHERE PersonID = ?)"
+    sql = "exec [dbo].[UpdateSoftware1] ?, ?, ?"
     totalQuestions = 12
-    tool.update_answers_program(message.from_user.id, sql, totalQuestions)
-    await bot.send_message(message.from_user.id, 'Подтверждено:')
+    tool.update_answers_program(message.from_user.id, sqlOut, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='programOptConfirm2'))
+async def OptConfirmProgram2_command(message: types.Message):
+    sqlOut = "SELECT [Answers1] FROM [StatitisticSoftware] WHERE Id = (SELECT Id FROM Participant WHERE PersonID = ?)"
+    sql = "exec [dbo].[UpdateSoftware2] ?, ?, ?"
+    totalQuestions = 12
+    tool.update_answers_program(message.from_user.id, sqlOut, sql, totalQuestions)
+    await bot.send_message(message.from_user.id, f'{random.choice(storage.list_support)}')
+
+
+# --------------------------------------------------------------------------------
+
+# Для режим руководителей
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='getStudents'))
+async def getRukov_command(message: types.Message):
+    storage.Options_answ = []
+    await bot.send_message(message.from_user.id, f'Выберите студента.',
+                           reply_markup=kbs.createButStudents(message.from_user.id))
+
+
+@dp.callback_query_handler(kbs.cb.filter(action='SelectStudentConfirm'))
+async def getRukov_command(message: types.Message):
+    temp = int(storage.Options_answ[-1]) - 1
+    selectedStudentId = int(storage.lst_students.get(message.from_user.id)[temp][0])
+
+    # connect = Connection.connect()
+    # cursor = connect.cursor()
+    #
+    # sql = "exec [dbo].[UpdateStudendtSuperviser] ?, ?"
+    # params = (message.from_user.id, selectedStudentId)
+    # cursor.execute(sql, (params))
+    #
+    # connect.commit()
+    # cursor.close()
+    # connect.close()
+
+    await bot.send_message(message.from_user.id, f'Выбран:\n{storage.lst_students.get(message.from_user.id)[selectedStudentId][1]}')
+
+
 
 
 
