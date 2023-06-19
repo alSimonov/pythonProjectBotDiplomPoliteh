@@ -669,7 +669,17 @@ async def process_mmenu_message(message: types.Message):
 
 # Все по программе
 # --------------------------------------------------------------------------------
+@dp.callback_query_handler(kbs.cb.filter(action='statPZ'))
+async def process_menu_message(message: types.Message):
+    await bot.send_message(message.chat.id, 'Статистика ПЗ:', reply_markup=kbs.stat_keyboard)
+    sql = "exec [dbo].[StatProxExNote] ?"
+    tool.stat_pz(message.from_user.id,sql)
 
+@dp.callback_query_handler(kbs.cb.filter(action='statPO'))
+async def process_menu_message(message: types.Message):
+    await bot.send_message(message.chat.id, 'Статистика ПО:', reply_markup=kbs.stat_keyboard)
+    sql = "exec [dbo].[StatProxExNote] ?"
+    tool.stat_pz(message.from_user.id, sql)
 
 @dp.callback_query_handler(kbs.cb.filter(action='program'))
 async def po_command(call: CallbackQuery):

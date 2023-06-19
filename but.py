@@ -51,8 +51,10 @@ menu_keyboard = InlineKeyboardMarkup().row(
 ).add(
     InlineKeyboardButton('ПЗ', callback_data='mark:pz'),
     InlineKeyboardButton('Программа', callback_data='mark:program')
+).add(
+    InlineKeyboardButton('Статистика ПЗ', callback_data='mark:statPZ'),
+    InlineKeyboardButton('Статистика ПО', callback_data='mark:statPO')
 )
-
 # меню для руководителей
 menu_forRukov_keyboard = InlineKeyboardMarkup().row(
     InlineKeyboardButton('Регистрация', callback_data='mark:registr')
@@ -74,6 +76,10 @@ reg_keyboard = InlineKeyboardMarkup().add(
     InlineKeyboardButton('Регистрация', callback_data='mark:registr')
 )
 
+# Статистика
+stat_keyboard = InlineKeyboardMarkup().add(
+    InlineKeyboardButton('Статистика', callback_data='mark:stat')
+)
 
 # Вывод руководителей
 

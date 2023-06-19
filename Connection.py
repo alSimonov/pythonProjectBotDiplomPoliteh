@@ -2,7 +2,7 @@ import pyodbc
 
 import storage
 
-s = 'DESKTOP-IBJCCC1'  # Your server name
+s = 'DESKTOP-134JFDN'  # Your server name
 d = 'DiplomBotDB'  # Your database name
 u = 'admin'  # Your login
 p = 'admin'  # Your login password
@@ -20,7 +20,24 @@ def connect():
 # cursor.execute("exec [dbo].[GetStudentsBySuperviser] ?", '1481918994')
 # for row in cursor.fetchall():
 #     print(row)
-
+#
+# conn = connect()
+# cursor = conn.cursor()
+# cursor.execute("exec [dbo].[StatProcExNote] ?", '1544090248')
+# for row in cursor.fetchall():
+#     s=str(row)[10:-8]
+#     s_float=float(s)*100
+#     print(f'Ваш прогресс составляет: {str(s_float)[:-2]} %')
+#     s_int1 = float(s)*20
+#     x1=int(s_int1)*'!'
+#
+#     s_int2 = 20-s_int1
+#     x2=int(s_int2)*'.'
+#
+#     print(x1+x2)
+#
+# cursor.close()
+# conn.close()
 
 # str_temp = ""
 # cursor.execute("SELECT [Id], [LastName], [FirstName], [Patronymic] FROM [Participant] WHERE IdRole = (SELECT Id FROM [Role] WHERE [Name] = ?)",

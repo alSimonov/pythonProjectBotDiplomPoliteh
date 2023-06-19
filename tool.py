@@ -22,6 +22,48 @@ dp = Dispatcher(bot)
 class Mydialog(StatesGroup):
     otvet = State()
 
+def stat_pz(userId, sql):
+    connect = Connection.connect()
+    cursor = connect.cursor()
+
+    params = userId
+
+    cursor.execute(sql, (params))
+    # for row in cursor.fetchall():
+    #     s = str(row)[10:-8]
+    #     s_float = float(s) * 100
+    #     return f'Ваш прогресс составляет: {str(s_float)[:-2]} %'
+
+    for row in cursor.fetchall():
+        s = str(row)[10:-8]
+        s_int1 = float(s) * 20
+        x1 = int(s_int1) * '!'
+
+        s_int2 = 20 - s_int1
+        x2 = int(s_int2) * '.'
+
+        return x1 + x2
+
+    cursor.close()
+    connect.close()
+
+
+def stat_po(userId, sql):
+    connect = Connection.connect()
+    cursor = connect.cursor()
+
+    cursor.execute("SELECT [Result]*'!' FROM StatitisticSoftware WHERE Id = (SELECT Id FROM Participant WHERE PersonID = ?)",
+                   userId)
+
+
+    params = str(userId)
+    cursor.execute(sql, (params))
+
+    connect.commit()
+    cursor.close()
+    connect.close()
+
+
 
 def update_answers(userId, sql, totalQuestions):
     connect = Connection.connect()
@@ -38,19 +80,20 @@ def update_answers(userId, sql, totalQuestions):
     storage.Options_answ = []
 
 
-def update_answers_program(userId, sqlOut , sql, totalQuestions):
+def update_answers_program(userId, sql, totalQuestions):
     connect = Connection.connect()
     cursor = connect.cursor()
 
     str_temp = ""
-    cursor.execute(sqlOut, userId)
+    cursor.execute("SELECT [Answers] FROM UpdateConclusion WHERE Id = (SELECT Id FROM Participant WHERE PersonID = ?)",
+                   userId)
     for row in cursor.fetchall():
-        str_temp = str(row)[2: -3]
+        str_temp = str(row)[2:-3]
 
     lst_temp = str_temp.split(',')
 
-    result = (len(storage.Options_answ) + len(lst_temp)) / totalQuestions
-    params = (str(userId), ",".join(storage.Options_answ), result)
+    result = len(storage.Options_answ) / totalQuestions
+    params = (str(userId), ",".join(set(lst_temp + storage.Options_answ)), result)
     cursor.execute(sql, (params))
 
     connect.commit()
@@ -58,6 +101,7 @@ def update_answers_program(userId, sqlOut , sql, totalQuestions):
     connect.close()
 
     storage.Options_answ = []
+
 
 
 # async def delete_message(message: types.Message):
