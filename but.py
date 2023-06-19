@@ -55,6 +55,7 @@ menu_keyboard = InlineKeyboardMarkup().row(
     InlineKeyboardButton('Статистика ПЗ', callback_data='mark:statPZ'),
     InlineKeyboardButton('Статистика ПО', callback_data='mark:statPO')
 )
+
 # меню для руководителей
 menu_forRukov_keyboard = InlineKeyboardMarkup().row(
     InlineKeyboardButton('Регистрация', callback_data='mark:registr')
@@ -80,6 +81,12 @@ reg_keyboard = InlineKeyboardMarkup().add(
 stat_keyboard = InlineKeyboardMarkup().add(
     InlineKeyboardButton('Статистика', callback_data='mark:stat')
 )
+
+statPzDetail_keyboard = InlineKeyboardMarkup().add(
+    InlineKeyboardButton('Подробнее', callback_data='mark:statPzDetail')
+)
+
+
 
 # Вывод руководителей
 
@@ -137,9 +144,8 @@ def createButStudents(idPerson):
     cursor.close()
     conn.close()
 
-    if studentsTemp == None:
-        return
-
+    if len(studentsTemp) == 0:
+        return None
 
     num = 1
     for i in studentsTemp:
@@ -189,43 +195,3 @@ Introduction_keyboard = InlineKeyboardMarkup().add(InlineKeyboardButton('Да', 
 Introduction_keyboard.add(InlineKeyboardButton('Подтвердить', callback_data='mark:pzOptConfirm1'))
 
 # -------------------------------------------------------------------------
-
-study_keyboard = InlineKeyboardMarkup()
-history_button = InlineKeyboardButton('История', 'history_but')
-
-study_keyboard.add(history_button)
-
-question1_cb = CallbackData('question1', 'answer')
-question2_cb = CallbackData('question2', 'answer')
-question3_cb = CallbackData('question3', 'answer')
-question4_cb = CallbackData('question4', 'answer')
-
-# Создаем кнопки с вариантами ответов для каждого вопроса для инструментов
-question1_buttons = InlineKeyboardMarkup(row_width=1).add(
-    InlineKeyboardButton('Начало строительства Берлинской стены',
-                         callback_data=question1_cb.new(
-                             answer='a')),
-    InlineKeyboardButton('Убийство Франца Фердинанда в Сараево',
-                         callback_data=question1_cb.new(
-                             answer='b')),
-    InlineKeyboardButton(
-        'Подписание Тройственного союза между Германией, Австро-Венгрией и Италией',
-        callback_data=question1_cb.new(answer='c')))
-question2_buttons = InlineKeyboardMarkup(row_width=1).add(
-    InlineKeyboardButton('1789', callback_data=question2_cb.new(answer='a')),
-    InlineKeyboardButton('1889', callback_data=question2_cb.new(answer='b')),
-    InlineKeyboardButton('1989', callback_data=question2_cb.new(answer='c'))
-)
-question3_buttons = InlineKeyboardMarkup(row_width=1).add(
-    InlineKeyboardButton('Михаил Горбачев',
-                         callback_data=question3_cb.new(answer='a')),
-    InlineKeyboardButton('Борис Ельцин',
-                         callback_data=question3_cb.new(answer='b')),
-    InlineKeyboardButton('Владимир Путин',
-                         callback_data=question3_cb.new(answer='c'))
-)
-question4_buttons = InlineKeyboardMarkup(row_width=1).add(
-    InlineKeyboardButton('1817', callback_data=question4_cb.new(answer='a')),
-    InlineKeyboardButton('1917', callback_data=question4_cb.new(answer='b')),
-    InlineKeyboardButton('1927', callback_data=question4_cb.new(answer='c'))
-)
