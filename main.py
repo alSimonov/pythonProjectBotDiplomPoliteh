@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram.dispatcher import FSMContext
 import random
 import tool
@@ -400,6 +402,7 @@ async def pzOptConfirm2_command(message: types.Message):
                                                  f'\n{random.choice(storage.list_support)}')
 
 
+
 @dp.callback_query_handler(kbs.cb.filter(action='pzOptConfirm3'))
 async def pzOptConfirm3_command(message: types.Message):
     sql = "exec [dbo].[UpdateSubjectAreaOverview] ?, ?, ?"
@@ -760,7 +763,9 @@ async def getStudents_command(message: types.Message):
     str_n = ('', '\nХм... а их нет.')[keyboard == None]
     await bot.send_message(message.from_user.id, f'Выберите студента.{str_n}',
                            reply_markup=keyboard)
-    await bot.send_message(message.from_user.id, '🙀')
+
+    if keyboard == None:
+        await bot.send_message(message.from_user.id, '🙀')
 
 
 @dp.callback_query_handler(kbs.cb.filter(action='SelectStudentConfirm'))

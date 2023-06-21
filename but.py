@@ -34,9 +34,9 @@ yesorno_registr_keyboard = InlineKeyboardMarkup().add(
 
 # подтверждение удаления аккаунта
 delete_account_keyboard = InlineKeyboardMarkup().add(
-    InlineKeyboardButton('Да', callback_data='mark:deleteAccount'),
-    InlineKeyboardButton('Нет', callback_data='mark:menu')
+    InlineKeyboardButton('Да', callback_data='mark:deleteAccount')
 )
+# ,InlineKeyboardButton('Нет', callback_data='mark:menu')
 
 # Программа
 program_keyboard = InlineKeyboardMarkup().add(
